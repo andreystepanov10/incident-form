@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Сообщить об инциденте</title>
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --bg: #f1f5f9;
+        --card: #ffffff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --border: #cbd5e1;
+        --error: #dc2626;
+        --success: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        padding: 16px;
+    }
+    .card {
+        max-width: 560px;
+        margin: 0 auto;
+        background: var(--card);
+        border-radius: 16px;
+        padding: 24px 20px 28px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+    }
+    .subtitle {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 20px;
+        line-height: 1.4;
+    }
+    fieldset {
+        border: none;
+        padding: 0;
+        margin: 0 0 20px;
+    }
+    legend {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin-bottom: 10px;
+        padding: 0;
+    }
+    label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        margin: 12px 0 6px;
+    }
+    label .req { color: var(--error); }
+    label .hint { color: var(--muted); font-weight: 400; }
+    label.checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 400;
+    }
+    label.checkbox-label input[type="checkbox"] {
+        width: auto;
+    }
+    .staff-checklist {
+        display: flex;
+        flex-direction: column;
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        margin-top: 8px;
+    }
+    .staff-checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 400;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .staff-checklist-item:last-child { border-bottom: none; }
+    .staff-checklist-item:hover { background: #f7f9fc; }
+    .staff-checklist-item input[type="checkbox"] { width: auto; flex-shrink: 0; }
+    .staff-checklist-item:has(input:checked) { background: #eef4ff; font-weight: 500; }
+    .staff-checklist:empty::after {
+        content: 'Список сотрудников не заполнен';
+        display: block;
+        padding: 10px 14px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--text);
+        font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    @media (max-width: 420px) {
+        .row2 { grid-template-columns: 1fr; }
+    }
+    button {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--primary);
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+    button:active { background: var(--primary-dark); }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .msg {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        display: none;
+    }
+    .msg.show { display: block; }
+    .msg.error { background: #fef2f2; color: var(--error); }
+    .msg.success { background: #f0fdf4; color: var(--success); }
+    .note {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 18px;
+        line-height: 1.5;
+    }
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>Сообщить об инциденте</h1>
+    <p class="subtitle">Заполните форму, если стали свидетелем или участником нежелательного события. Заявка поступит ответственному в ВКК в течение нескольких минут.</p>
+
+    <form id="reportForm">
+        <fieldset>
+            <legend>Событие</legend>
+
+            <label for="groupId">Группа НС <span class="req">*</span></label>
+            <select id="groupId" required>
+                <option value="" disabled selected>Выберите группу</option>
+                <!-- Список отражает справочник dict_incident_groups на момент создания формы.
+                     Если группы изменятся в программе — обновите массив GROUPS ниже в скрипте. -->
+            </select>
+
+            <label for="causeId">Причина <span class="hint">(если известна)</span></label>
+            <select id="causeId">
+                <option value="">-- Сначала выберите группу --</option>
+            </select>
+
+            <label for="eventDate">Дата и время события <span class="req">*</span></label>
+            <input type="datetime-local" id="eventDate" required>
+
+            <label for="severity">Статус реагирования <span class="hint">(если известен)</span></label>
+            <select id="severity">
+                <option value="">Не указано</option>
+                <option value="red">Красный — реагирование до 1 часа</option>
+                <option value="yellow">Жёлтый — реагирование до 3 часов</option>
+                <option value="green">Зелёный — реагирование в течение дня</option>
+            </select>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="isLethal">
+                Исход: летальный
+            </label>
+
+            <label for="departmentId">Корпус <span class="hint">(если применимо)</span></label>
+            <select id="departmentId">
+                <option value="">Не указано</option>
+                <!-- ВНИМАНИЕ: список ниже взят из текущего справочника dict_departments.
+                     На момент подготовки формы в нём были в том числе тестовые записи —
+                     перед публикацией формы приведите список в соответствие реальным
+                     корпусам клиники и актуализируйте id/названия. -->
+                <option value="4">Тепличный</option>
+                <option value="5">5</option>
+                <option value="6">1</option>
+            </select>
+
+            <label for="subDepartmentId">Отделение <span class="hint">(если применимо)</span></label>
+            <select id="subDepartmentId">
+                <option value="">Не указано</option>
+                <!-- Список отражает справочник dict_sub_departments на момент создания формы. -->
+                <option value="1">ЦРИ</option>
+                <option value="2">Тест</option>
+                <option value="3">Время</option>
+            </select>
+
+            <label for="locationNote">Место <span class="hint">(например, «Палата 5»)</span></label>
+            <input type="text" id="locationNote" autocomplete="off">
+
+            <label>Лица, участвующие в инциденте</label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="participantPatient">
+                Пациент
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="participantVisitor">
+                Посетитель
+            </label>
+            <label for="participantStaffSearch" class="hint" style="display:block;margin-top:10px;">Медицинские работники (можно выбрать несколько)</label>
+            <input type="text" id="participantStaffSearch" placeholder="Поиск по фамилии...">
+            <div id="participantStaffList" class="staff-checklist"></div>
+
+            <label for="description">Описание события <span class="req">*</span></label>
+            <textarea id="description" required placeholder="Что произошло, где, при каких обстоятельствах"></textarea>
+        </fieldset>
+
+        <fieldset>
+            <legend>Пациент <span class="hint" style="text-transform:none;font-weight:400;">(если применимо, необязательно)</span></legend>
+
+            <div class="row2">
+                <div>
+                    <label for="patientLastName">Фамилия</label>
+                    <input type="text" id="patientLastName" autocomplete="off">
+                </div>
+                <div>
+                    <label for="patientFirstName">Имя</label>
+                    <input type="text" id="patientFirstName" autocomplete="off">
+                </div>
+            </div>
+            <label for="patientPatronymic">Отчество</label>
+            <input type="text" id="patientPatronymic" autocomplete="off">
+
+            <label for="patientBirthDate">Дата рождения</label>
+            <input type="date" id="patientBirthDate">
+        </fieldset>
+
+        <fieldset>
+            <legend>Заявитель</legend>
+
+            <label for="reporterName">Ваши ФИО <span class="req">*</span></label>
+            <input type="text" id="reporterName" required autocomplete="off">
+
+            <label for="reporterPhone">Телефон для связи <span class="hint">(если нужно уточнить детали)</span></label>
+            <input type="tel" id="reporterPhone" autocomplete="off">
+
+            <label for="pin">Код доступа <span class="req">*</span></label>
+            <input type="text" id="pin" required autocomplete="off" placeholder="Выдаётся сотрудникам ВКК">
+        </fieldset>
+
+        <button type="submit" id="submitBtn">Отправить заявку</button>
+        <div class="msg" id="msg"></div>
+    </form>
+
+    <p class="note">Заявка не публикуется мгновенно — она обрабатывается автоматически в течение нескольких минут и попадает в систему как зарегистрированный инцидент.</p>
+</div>
+
+<script>
+    // Заполните после развёртывания Google Apps Script (см. инструкцию).
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhyfVdwPAeec6AxgN1y3peYIA7VNnziyDESxrBfYbLbcAldNZK3IQ2Ohg_EHkPdU5Q/exec';
+
+    // Справочник групп/причин НС — снимок dict_incident_groups/dict_incident_causes
+    // на момент создания формы. Обновите вручную, если справочник в программе изменится.
+    const GROUPS = [
+      { id: 1, code: '01', name: 'НС, связанные с идентификацией', causes: [
+        { id: 1, code: '01', name: 'связанные с неправильной идентификацией личности пациента', severity: 'green' },
+        { id: 2, code: '02', name: 'связанные с неправильной идентификацией биологического материала пациента', severity: 'green' },
+        { id: 3, code: '03', name: 'связанные с неправильной идентификацией части тела, анатомической области, парного органа пациента', severity: 'green' },
+        { id: 4, code: '04', name: 'связанные с неправильной идентификацией медицинских документов пациента', severity: 'green' },
+      ]},
+      { id: 2, code: '02', name: 'НС, связанные с применением лекарственных средств', causes: [
+        { id: 5, code: '01', name: 'связанные с нарушением правил оборота, условий и сроков хранения лекарственных препаратов', severity: 'yellow' },
+        { id: 6, code: '02', name: 'связанные с нарушением правил назначения и применения лекарственных препаратов', severity: 'yellow' },
+        { id: 7, code: '03', name: 'связанные с возникновением реакции организма на лекарственный препарат, применяемый в дозах, рекомендуемых в инструкции по его применению', severity: 'red' },
+        { id: 8, code: '04', name: 'связанные с возникновением непреднамеренной неблагоприятной реакции организма, связанной с применением лекарственного препарата', severity: 'red' },
+        { id: 9, code: '05', name: 'связанные с возникновением реакции организма, связанной с применением лекарственного препарата в рамках клинического испытания', severity: 'yellow' },
+        { id: 10, code: '06', name: 'связанные с необоснованным назначением лекарственных препаратов; одновременным назначением лекарственных препаратов со схожим фармакологическим действием; нерациональной лекарственной терапии', severity: 'green' },
+        { id: 11, code: '07', name: 'связанные с отсутствием эффекта от применения лекарственного препарата', severity: 'green' },
+      ]},
+      { id: 3, code: '03', name: 'НС, связанные с применением и эксплуатацией медицинских изделий', causes: [
+        { id: 12, code: '01', name: 'связанные с несоответствием эксплуатационных характеристик применяемого медицинского изделия, рекомендованных производителем, возрасту, полу, весу, росту или иным показателям пациента', severity: 'green' },
+        { id: 13, code: '02', name: 'связанные с отклонением от проектных параметров медицинского изделия, допущенным в процессе доставки и установки', severity: 'green' },
+        { id: 14, code: '03', name: 'связанные с отклонением от проектных химических характеристик медицинского изделия, допущенным в процессе доставки и установки', severity: 'green' },
+        { id: 15, code: '04', name: 'связанные с ненадежностью материалов, использованных в процессе производства медицинского изделия', severity: 'green' },
+        { id: 16, code: '05', name: 'связанные с непредвиденным механическим воздействием медицинского изделия на пациента или медицинского работника', severity: 'red' },
+        { id: 17, code: '06', name: 'связанные с неудовлетворительным качеством передаваемого изображения, влияющим на работу медицинского изделия', severity: 'yellow' },
+        { id: 18, code: '07', name: 'связанные с неисправностью электрической схемы медицинского изделия', severity: 'green' },
+        { id: 19, code: '08', name: 'связанные с нарушением калибровки медицинского изделия, влияющее на его точность', severity: 'green' },
+        { id: 20, code: '09', name: 'связанные с отклонениями от технической документации медицинского изделия, влияющими на передаваемые медицинским изделием данные', severity: 'green' },
+        { id: 21, code: '10', name: 'связанные с отклонениями от режима рабочей температуры медицинского изделия, приводящими к его перегреву или переохлаждению', severity: 'red' },
+        { id: 22, code: '11', name: 'связанные с негативным влиянием программного кода или программного обеспечения на работу медицинского изделия', severity: 'green' },
+        { id: 23, code: '12', name: 'связанные с неправильным подключением медицинского изделия или его функциональных блоков к системам обеспечения жидкостями, газами, электричеством или передачи данных', severity: 'green' },
+        { id: 24, code: '13', name: 'связанные со сбоями отправки или получения сигналов, или данных между внутренними компонентами медицинского изделия', severity: 'green' },
+        { id: 25, code: '14', name: 'связанные с дефектами циркуляции жидкости или газов в медицинском изделии (включая процесс вакуумирования)', severity: 'green' },
+        { id: 26, code: '15', name: 'связанные с отклонениями от проектных параметров медицинского изделия, приводящим к нарушению последовательности событий для активации или установки медицинского изделия в конкретное положение или его разъединения', severity: 'green' },
+        { id: 27, code: '16', name: 'связанные с отклонениями от проектных параметров медицинского изделия, предназначенных для снижения рисков или поддержания допустимого уровня рисков для пациента или медицинского работника', severity: 'green' },
+        { id: 28, code: '17', name: 'связанные с индивидуальной непереносимостью медицинского изделия пациентом/медработником', severity: 'green' },
+        { id: 29, code: '18', name: 'связанные с наличием не предусмотренного технической документацией постороннего вещества в медицинском изделии, на его поверхности или в упаковке, которое может повлиять на эффективность работы медицинского изделия или его применение по назначению, или которое ставит под угрозу эффективность дезинфекции медицинского изделия', severity: 'green' },
+        { id: 30, code: '19', name: 'связанные с несоответствием окружающей среды условиям, предусмотренным технической документацией для эксплуатации или хранения медицинского изделия', severity: 'green' },
+        { id: 31, code: '20', name: 'связанные с неправильной установкой, настройкой медицинского изделия или его конфигурацией', severity: 'green' },
+        { id: 32, code: '21', name: 'связанные с несоответствующей медицинскому изделию маркировкой, инструкцией по применению и документацией по обучению и техническому обслуживанию медицинского изделия', severity: 'green' },
+        { id: 33, code: '22', name: 'связанные с результатом воздействия медицинского изделия на пациента, не предусмотренным изготовителем или медицинским работником', severity: 'green' },
+        { id: 34, code: '23', name: 'связанные с ошибками при обслуживании, эксплуатации медицинского изделия, нарушающими рекомендации изготовителя', severity: 'green' },
+        { id: 35, code: '24', name: 'произошедшие при использовании или эксплуатации медицинского изделия, но не связанные с ним', severity: 'green' },
+      ]},
+      { id: 4, code: '04', name: 'НС, связанные с возникновением инфекционных заболеваний', causes: [
+        { id: 36, code: '01', name: 'связанные с возникновением инфекций области хирургического вмешательства', severity: 'yellow' },
+        { id: 37, code: '02', name: 'связанные с возникновением инфекций органов дыхания', severity: 'yellow' },
+        { id: 38, code: '03', name: 'связанные с возникновением инфекций, связанных с инфузией, трансфузией, лечебной инъекцией, иммунизацией', severity: 'yellow' },
+        { id: 39, code: '04', name: 'связанные с возникновением инфекций мочевыводящих путей', severity: 'yellow' },
+        { id: 40, code: '05', name: 'связанные с возникновением гнойно-септических инфекций новорожденных', severity: 'yellow' },
+        { id: 41, code: '06', name: 'связанные с возникновением гнойно-септических инфекций родильниц', severity: 'yellow' },
+        { id: 42, code: '07', name: 'связанные с возникновением острых кишечных инфекций, острых вирусных гепатитов А, Е', severity: 'yellow' },
+        { id: 43, code: '08', name: 'связанные с возникновением воздушно-капельных инфекций', severity: 'yellow' },
+        { id: 44, code: '09', name: 'связанные с возникновением туберкулеза впервые выявленного, активных форм', severity: 'yellow' },
+        { id: 45, code: '10', name: 'связанные с возникновением болезни, вызванной ВИЧ', severity: 'red' },
+        { id: 46, code: '11', name: 'связанные с возникновением вирусных гепатитов B, С', severity: 'red' },
+        { id: 47, code: '12', name: 'связанные с возникновением COVID-19', severity: 'red' },
+        { id: 48, code: '13', name: 'связанные с возникновением пневмонии (вирусной, бактериальной, вызванной иными возбудителями, неуточненной)', severity: 'yellow' },
+        { id: 49, code: '14', name: 'связанные с возникновением других инфекционных заболеваний, носительством возбудителей инфекционных заболеваний', severity: 'yellow' },
+      ]},
+      { id: 5, code: '05', name: 'НС, связанные с хирургическими вмешательствами', causes: [
+        { id: 50, code: '01', name: 'связанные с ошибками в планировании оперативного вмешательства, в том числе ненадлежащей оценкой риска оперативного вмешательства для пациента', severity: 'red' },
+        { id: 51, code: '02', name: 'связанные с ненадлежащей предоперационной подготовкой и профилактикой послеоперационных осложнений', severity: 'red' },
+        { id: 52, code: '03', name: 'связанные с нарушением техники проведения операции, инвазивной манипуляции', severity: 'red' },
+        { id: 53, code: '04', name: 'связанные с обезболиванием', severity: 'red' },
+        { id: 54, code: '05', name: 'связанные с ведением пациента в послеоперационном периоде', severity: 'yellow' },
+        { id: 55, code: '06', name: 'связанные с установленным у пациента внутриполостным устройством (катетерами, зондами, трубками и пр.)', severity: 'yellow' },
+      ]},
+      { id: 6, code: '07', name: 'НС, связанные с невыполнением, ненадлежащим выполнением клинических рекомендаций, порядков оказания и стандартов медицинской помощи с учетом перечня оснований для отказа в оплате медицинской помощи', causes: [
+        { id: 56, code: '01', name: 'связанные с несвоевременным или ненадлежащим выполнением необходимых пациенту профилактических, диагностических, лечебных и реабилитационных мероприятий в соответствии с порядками оказания медицинской помощи, на основе клинических рекомендаций', severity: 'green' },
+        { id: 57, code: '02', name: 'связанные с несоблюдением сроков ожидания медицинской помощи, оказываемой в плановой форме, проведения отдельных диагностических обследований и консультаций врачей-специалистов', severity: 'green' },
+        { id: 58, code: '03', name: 'связанные с невыполнением, несвоевременным или ненадлежащим выполнением необходимых пациенту диагностических и (или) лечебных мероприятий, оперативных вмешательств в соответствии с порядками оказания медицинской помощи, на основе клинических рекомендаций', severity: 'green' },
+        { id: 59, code: '04', name: 'связанные с установлением неверного диагноза из-за невыполнения, несвоевременного или ненадлежащего выполнения необходимых пациенту диагностических и (или) лечебных мероприятий, оперативных вмешательств в соответствии с порядками оказания медицинской помощи, на основе клинических рекомендаций', severity: 'green' },
+        { id: 60, code: '05', name: 'связанные с выполнением непоказанных, неоправданных с клинической точки зрения, не регламентированных порядками оказания медицинской помощи, клиническими рекомендациями мероприятий', severity: 'green' },
+        { id: 61, code: '06', name: 'связанные с госпитализацией пациента в плановой или неотложной форме с нарушением требований к профильности оказанной медицинской помощи (кроме случаев госпитализации в неотложной и экстренной форме с последующим переводом в течение суток в профильные медицинские организации)', severity: 'green' },
+        { id: 62, code: '07', name: 'связанные с нарушением преемственности в оказании медицинской помощи', severity: 'green' },
+        { id: 63, code: '08', name: 'связанные с преждевременным с клинической точки зрения прекращением оказания медицинской помощи при отсутствии клинического эффекта (за исключением случаев отказа пациента от медицинского вмешательства в установленных законодательством случаях)', severity: 'green' },
+        { id: 64, code: '09', name: 'связанные с преждевременной выпиской пациента из медицинской организации', severity: 'green' },
+        { id: 65, code: '10', name: 'связанные с отсутствием в медицинской документации результатов обследований, осмотров, консультаций специалистов, дневниковых записей, позволяющих оценить динамику состояния здоровья пациента, объем, характер необходимой медицинской помощи', severity: 'green' },
+        { id: 66, code: '11', name: 'связанные с искажением сведений в медицинской документации о проведенных диагностических и лечебных мероприятиях, клинической картине заболевания; расхождением сведений об оказании медицинской помощи', severity: 'green' },
+        { id: 67, code: '12', name: 'связанные с необоснованным отказом в оказании медицинской помощи пациенту', severity: 'green' },
+      ]},
+      { id: 7, code: '08', name: 'НС, связанные с выполнением манипуляций сестринского ухода', causes: [
+        { id: 68, code: '01', name: 'связанные с выполнением пациенту гигиенических процедур', severity: 'green' },
+        { id: 69, code: '02', name: 'связанные с перемещением и транспортировкой пациента', severity: 'yellow' },
+        { id: 70, code: '03', name: 'связанные с уходом за медицинскими изделиями, применяемыми пациентом', severity: 'green' },
+        { id: 71, code: '04', name: 'связанные с оказанием пособия тяжелобольным, маломобильным пациентам при физиологических актах', severity: 'red' },
+        { id: 72, code: '05', name: 'связанные с выполнением процедур', severity: 'red' },
+        { id: 73, code: '06', name: 'связанные с ненадлежащим уходом за лежачими, маломобильными пациентами и профилактикой осложнений, связанных с длительной малоподвижностью пациента', severity: 'yellow' },
+        { id: 74, code: '07', name: 'связанные с уходом за новорожденным', severity: 'red' },
+      ]},
+      { id: 8, code: '09', name: 'НС, связанные с условиями среды медицинской организации', causes: [
+        { id: 75, code: '01', name: 'связанные с перемещением внутри и на территории медицинской организации', severity: 'red' },
+        { id: 76, code: '02', name: 'связанные с функционированием и использованием коммунальных и инженерных систем медицинской организации', severity: 'red' },
+        { id: 77, code: '03', name: 'связанные с использованием вспомогательных конструкций и механизмов (подъемников, лифтов и пр.)', severity: 'red' },
+        { id: 78, code: '04', name: 'связанные с деятельностью на территории медицинской организации иных хозяйствующих субъектов, в том числе при использовании вендинговых автоматов', severity: 'green' },
+        { id: 79, code: '05', name: 'связанные с обеспечением информационной безопасности', severity: 'red' },
+        { id: 80, code: '06', name: 'связанные с техногенными авариями или воздействием обстоятельств непреодолимой силы', severity: 'red' },
+        { id: 81, code: '07', name: 'связанные с обеспечением охраны и правопорядка', severity: 'red' },
+      ]},
+      { id: 9, code: '10', name: 'НС, не систематизированные в других рубриках', causes: [
+        { id: 82, code: '01', name: 'иное нежелательное событие, не предусмотренное данной классификацией', severity: 'red' },
+      ]},
+    ];
+
+    // Список сотрудников — снимок на момент создания формы. Обновите вручную,
+    // когда в программе появятся новые/уволятся старые сотрудники.
+    const STAFF = [
+      { id: 10, name: 'Администратор Новый' },
+      { id: 1, name: 'Администратор Системный' },
+      { id: 3, name: 'Иванов Иван Иванович' },
+      { id: 5, name: 'Петров Петр Петрович' },
+      { id: 7, name: 'Петрова Мария' },
+      { id: 4, name: 'Романов Роман' },
+      { id: 8, name: 'Степан Степан' },
+      { id: 6, name: 'Чурсина Светлана Александровна' },
+    ];
+
+    const form = document.getElementById('reportForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const msg = document.getElementById('msg');
+    const groupSelect = document.getElementById('groupId');
+    const causeSelect = document.getElementById('causeId');
+    const severitySelect = document.getElementById('severity');
+    const staffList = document.getElementById('participantStaffList');
+    const staffSearch = document.getElementById('participantStaffSearch');
+
+    function showMsg(text, type) {
+        msg.textContent = text;
+        msg.className = 'msg show ' + type;
+    }
+
+    staffList.innerHTML = STAFF.map(s => `
+        <label class="staff-checklist-item" data-name="${s.name.toLowerCase()}">
+            <input type="checkbox" data-name="${s.name}">
+            <span>${s.name}</span>
+        </label>
+    `).join('');
+
+    staffSearch.addEventListener('input', () => {
+        const query = staffSearch.value.trim().toLowerCase();
+        document.querySelectorAll('#participantStaffList .staff-checklist-item').forEach(item => {
+            item.hidden = query.length > 0 && !item.dataset.name.includes(query);
+        });
+    });
+
+    function buildParticipantsText() {
+        const parts = [];
+        if (document.getElementById('participantPatient').checked) parts.push('Пациент');
+        if (document.getElementById('participantVisitor').checked) parts.push('Посетитель');
+        document.querySelectorAll('#participantStaffList input[type="checkbox"]:checked').forEach(cb => {
+            parts.push(cb.dataset.name);
+        });
+        return parts.length > 0 ? parts.join(', ') : '';
+    }
+
+    groupSelect.innerHTML = '<option value="" disabled selected>Выберите группу</option>' +
+        GROUPS.map(g => `<option value="${g.id}">${g.code} — ${g.name}</option>`).join('');
+
+    groupSelect.addEventListener('change', () => {
+        const group = GROUPS.find(g => String(g.id) === groupSelect.value);
+        const causes = group ? group.causes : [];
+        causeSelect.innerHTML = '<option value="">Не указана</option>' +
+            causes.map(c => `<option value="${c.id}" data-severity="${c.severity || ''}">${c.code} — ${c.name}</option>`).join('');
+    });
+
+    // Статус реагирования подставляется автоматически по выбранной причине
+    // (можно поправить вручную, если нужно).
+    causeSelect.addEventListener('change', () => {
+        const selectedOption = causeSelect.options[causeSelect.selectedIndex];
+        const defaultSeverity = selectedOption?.dataset.severity;
+        if (defaultSeverity) {
+            severitySelect.value = defaultSeverity;
+        }
+    });
+
+    // Дата/время события по умолчанию — сейчас
+    const eventDateInput = document.getElementById('eventDate');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    eventDateInput.value = now.toISOString().slice(0, 16);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (APPS_SCRIPT_URL.indexOf('PASTE_APPS_SCRIPT_WEB_APP_URL_HERE') !== -1) {
+            showMsg('Форма ещё не настроена: не указан адрес Apps Script.', 'error');
+            return;
+        }
+
+        const payload = {
+            group_id: document.getElementById('groupId').value,
+            cause_id: document.getElementById('causeId').value,
+            event_date: document.getElementById('eventDate').value,
+            department_id: document.getElementById('departmentId').value,
+            sub_department_id: document.getElementById('subDepartmentId').value,
+            location_note: document.getElementById('locationNote').value.trim(),
+            participants: buildParticipantsText(),
+            severity: document.getElementById('severity').value,
+            is_lethal_outcome: document.getElementById('isLethal').checked,
+            description: document.getElementById('description').value.trim(),
+            patient_last_name: document.getElementById('patientLastName').value.trim(),
+            patient_first_name: document.getElementById('patientFirstName').value.trim(),
+            patient_patronymic: document.getElementById('patientPatronymic').value.trim(),
+            patient_birth_date: document.getElementById('patientBirthDate').value,
+            reporter_name: document.getElementById('reporterName').value.trim(),
+            reporter_phone: document.getElementById('reporterPhone').value.trim(),
+            pin: document.getElementById('pin').value.trim()
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
+        msg.className = 'msg';
+
+        try {
+            // Content-Type: text/plain, чтобы избежать CORS-preflight запроса
+            // к Apps Script (он не обрабатывает OPTIONS).
+            const res = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showMsg('Заявка отправлена. Спасибо!', 'success');
+                form.reset();
+                causeSelect.innerHTML = '<option value="">-- Сначала выберите группу --</option>';
+                document.querySelectorAll('#participantStaffList .staff-checklist-item').forEach(item => { item.hidden = false; });
+                now.setMinutes(new Date().getMinutes() - now.getTimezoneOffset());
+                eventDateInput.value = now.toISOString().slice(0, 16);
+            } else if (data.error === 'invalid_pin') {
+                showMsg('Неверный код доступа. Уточните его у ответственного за ВКК.', 'error');
+            } else {
+                showMsg('Не удалось отправить заявку: ' + (data.error || 'неизвестная ошибка'), 'error');
+            }
+        } catch (err) {
+            showMsg('Не удалось отправить заявку. Проверьте подключение к интернету и попробуйте ещё раз.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить заявку';
+        }
+    });
+</script>
+</body>
+</html>
