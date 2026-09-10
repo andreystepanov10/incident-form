@@ -267,8 +267,10 @@
             <label for="reporterPhone">Телефон для связи <span class="hint">(если нужно уточнить детали)</span></label>
             <input type="tel" id="reporterPhone" autocomplete="off">
 
-            <label for="pin">Код доступа <span class="req">*</span></label>
-            <input type="text" id="pin" required autocomplete="off" placeholder="Выдаётся сотрудникам ВКК">
+            <label for="pin">PIN-код <span class="req">*</span></label>
+            <input type="text" id="pin" required autocomplete="off" inputmode="numeric" pattern="[0-9]*"
+                autocapitalize="off" autocorrect="off" spellcheck="false"
+                placeholder="6 цифр, выдаётся сотрудникам ВКК">
         </fieldset>
 
         <button type="submit" id="submitBtn">Отправить заявку</button>
