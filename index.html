@@ -304,11 +304,6 @@
 
             <label for="reporterPhone">Телефон для связи <span class="hint">(если нужно уточнить детали)</span></label>
             <input type="tel" id="reporterPhone" autocomplete="off">
-
-            <label for="pin">PIN-код <span class="req">*</span></label>
-            <input type="text" id="pin" required autocomplete="off" inputmode="numeric" pattern="[0-9]*"
-                autocapitalize="off" autocorrect="off" spellcheck="false"
-                placeholder="6 цифр, выдаётся сотрудникам ВКК">
         </fieldset>
 
         <button type="submit" id="submitBtn">Отправить заявку</button>
@@ -643,8 +638,7 @@
             patient_patronymic: document.getElementById('patientPatronymic').value.trim(),
             patient_birth_date: document.getElementById('patientBirthDate').value,
             reporter_name: document.getElementById('reporterName').value.trim(),
-            reporter_phone: document.getElementById('reporterPhone').value.trim(),
-            pin: document.getElementById('pin').value.trim()
+            reporter_phone: document.getElementById('reporterPhone').value.trim()
         };
 
         submitBtn.disabled = true;
@@ -668,8 +662,6 @@
                 document.querySelectorAll('#participantStaffList .staff-checklist-item').forEach(item => { item.hidden = false; });
                 now.setMinutes(new Date().getMinutes() - now.getTimezoneOffset());
                 eventDateInput.value = now.toISOString().slice(0, 16);
-            } else if (data.error === 'invalid_pin') {
-                showMsg('Неверный код доступа. Уточните его у ответственного за ВКК.', 'error');
             } else {
                 showMsg('Не удалось отправить заявку: ' + (data.error || 'неизвестная ошибка'), 'error');
             }
