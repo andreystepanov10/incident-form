@@ -169,9 +169,9 @@
         <fieldset>
             <legend>Событие</legend>
 
-            <label for="groupId">Группа НС <span class="req">*</span></label>
-            <select id="groupId" required>
-                <option value="" disabled selected>Выберите группу</option>
+            <label for="groupId">Группа НС <span class="hint">(если известна)</span></label>
+            <select id="groupId">
+                <option value="" selected>Не указана / не знаю</option>
                 <!-- Список отражает справочник dict_incident_groups на момент создания формы.
                      Если группы изменятся в программе — обновите массив GROUPS ниже в скрипте. -->
             </select>
@@ -274,6 +274,12 @@
 
             <label for="description">Описание события <span class="req">*</span></label>
             <textarea id="description" required placeholder="Что произошло, где, при каких обстоятельствах"></textarea>
+
+            <label for="correctiveActionsTaken">Предпринятые действия после события <span class="hint">(необязательно)</span></label>
+            <textarea id="correctiveActionsTaken" placeholder="Что уже было сделано сразу после события"></textarea>
+
+            <label for="eliminationSuggestion">Предложение по устранению <span class="hint">(необязательно)</span></label>
+            <textarea id="eliminationSuggestion" placeholder="Ваше предложение, как избежать подобного в будущем"></textarea>
         </fieldset>
 
         <fieldset>
@@ -299,11 +305,29 @@
         <fieldset>
             <legend>Заявитель</legend>
 
+            <label for="reporterCategory">Кто сообщает <span class="hint">(необязательно)</span></label>
+            <select id="reporterCategory">
+                <option value="">Не указано</option>
+                <option value="staff">Медицинский/немедицинский персонал</option>
+                <option value="patient">Пациент</option>
+                <option value="visitor">Посетитель</option>
+            </select>
+
+            <label for="reportingMethod">Способ сообщения <span class="hint">(необязательно)</span></label>
+            <select id="reportingMethod">
+                <option value="">Не указано</option>
+            </select>
+
             <label for="reporterName">Ваши ФИО <span class="req">*</span></label>
             <input type="text" id="reporterName" required autocomplete="off">
 
             <label for="reporterPhone">Телефон для связи <span class="hint">(если нужно уточнить детали)</span></label>
             <input type="tel" id="reporterPhone" autocomplete="off">
+
+            <label for="pin">PIN-код <span class="req">*</span></label>
+            <input type="text" id="pin" required autocomplete="off" inputmode="numeric" pattern="[0-9]*"
+                autocapitalize="off" autocorrect="off" spellcheck="false"
+                placeholder="6 цифр, выдаётся сотрудникам ВКК">
         </fieldset>
 
         <button type="submit" id="submitBtn">Отправить заявку</button>
@@ -558,6 +582,29 @@
     const severitySelect = document.getElementById('severity');
     const staffList = document.getElementById('participantStaffList');
     const staffSearch = document.getElementById('participantStaffSearch');
+    const reporterCategorySelect = document.getElementById('reporterCategory');
+    const reportingMethodSelect = document.getElementById('reportingMethod');
+
+    const REPORTING_METHODS_BY_CATEGORY = {
+        staff: [
+            { value: 'electronic', label: 'Электронное извещение (QR-код)' },
+            { value: 'paper', label: 'Бумажное сообщение' }
+        ],
+        patient: [
+            { value: 'verbal', label: 'Устно' },
+            { value: 'paper', label: 'На бумажном носителе' }
+        ],
+        visitor: [
+            { value: 'verbal', label: 'Устно' },
+            { value: 'paper', label: 'На бумажном носителе' }
+        ]
+    };
+
+    reporterCategorySelect.addEventListener('change', () => {
+        const methods = REPORTING_METHODS_BY_CATEGORY[reporterCategorySelect.value] || [];
+        reportingMethodSelect.innerHTML = '<option value="">Не указано</option>' +
+            methods.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
+    });
 
     function showMsg(text, type) {
         msg.textContent = text;
@@ -633,12 +680,17 @@
             severity: document.getElementById('severity').value,
             is_lethal_outcome: document.getElementById('isLethal').checked,
             description: document.getElementById('description').value.trim(),
+            corrective_actions_taken: document.getElementById('correctiveActionsTaken').value.trim(),
+            elimination_suggestion: document.getElementById('eliminationSuggestion').value.trim(),
             patient_last_name: document.getElementById('patientLastName').value.trim(),
             patient_first_name: document.getElementById('patientFirstName').value.trim(),
             patient_patronymic: document.getElementById('patientPatronymic').value.trim(),
             patient_birth_date: document.getElementById('patientBirthDate').value,
+            reporter_category: document.getElementById('reporterCategory').value,
+            reporting_method: document.getElementById('reportingMethod').value,
             reporter_name: document.getElementById('reporterName').value.trim(),
-            reporter_phone: document.getElementById('reporterPhone').value.trim()
+            reporter_phone: document.getElementById('reporterPhone').value.trim(),
+            pin: document.getElementById('pin').value.trim()
         };
 
         submitBtn.disabled = true;
@@ -659,9 +711,12 @@
                 showMsg('Заявка отправлена. Спасибо!', 'success');
                 form.reset();
                 causeSelect.innerHTML = '<option value="">-- Сначала выберите группу --</option>';
+                reportingMethodSelect.innerHTML = '<option value="">Не указано</option>';
                 document.querySelectorAll('#participantStaffList .staff-checklist-item').forEach(item => { item.hidden = false; });
                 now.setMinutes(new Date().getMinutes() - now.getTimezoneOffset());
                 eventDateInput.value = now.toISOString().slice(0, 16);
+            } else if (data.error === 'invalid_pin') {
+                showMsg('Неверный код доступа. Уточните его у ответственного за ВКК.', 'error');
             } else {
                 showMsg('Не удалось отправить заявку: ' + (data.error || 'неизвестная ошибка'), 'error');
             }
